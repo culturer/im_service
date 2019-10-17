@@ -42,6 +42,8 @@ const getUserList  = 11
 const addApply  = 12
 //获取申请列表
 const getApplyList  = 13
+//查看好友信息
+const getUserInfo = 14
 
 func (this *UserController) Get() {
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "test", "time": time.Now().Format("2006-01-02 15:04:05")}
@@ -84,6 +86,8 @@ func (this *UserController) Post() {
 				this.addApply()
 			case getApplyList:
 				this.getApplyList()
+			case getUserInfo:
+				this.getUserInfo()
 		default:
 				this.Data["json"] = map[string]interface{}{"status": 400, "msg": "没有对应处理方法", "time": time.Now().Format("2006-01-02 15:04:05")}
 				this.ServeJSON()
@@ -249,6 +253,24 @@ func (this *UserController) getUserList() {
 	_, err = o.QueryTable("t_user_list").Filter("belong", userId).RelatedSel("friend").All(&friends)
 	this.dealError(err)
 	this.Data["json"] = map[string]interface{}{"status": 200, "categorys":categorys,"friends":friends, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
+}
+
+func (this *UserController) getUserInfo() {
+	tel := this.GetString("tel","")
+	if tel != "" {
+		var user models.TUser
+		o:= orm.NewOrm()
+		err := o.QueryTable("t_user").Filter("tel",tel).One(&user)
+		this.dealError(err)
+		user.Family = nil
+		user.Pwd = ""
+		this.Data["json"] = map[string]interface{}{"status": 200, "user": user, "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	}
+	this.Data["json"] = map[string]interface{}{"status": 400,"msg":"unknow tel !","time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
 }
