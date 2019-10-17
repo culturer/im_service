@@ -190,10 +190,12 @@ func (this *UserController) getApplyList(){
 
 //申请添加好友
 func (this *UserController) addApply() {
+
 	o := orm.NewOrm()
 	var apply models.TApply
 	userId,_ := this.GetInt64("userId",-1)
 	friendId,_ := this.GetInt64("friendId",-1)
+	fromCategoryId,_ := this.GetInt64("fromCategoryId",-1)
 	myType,_ := this.GetInt("type",0)
 	msg := this.GetString("msg","")
 	apply.UserId = userId
@@ -202,6 +204,7 @@ func (this *UserController) addApply() {
 	apply.CreateTime = time.Now()
 	apply.Type = myType
 	apply.Status = false
+	apply.FromCategoryId = fromCategoryId
 	id,err := o.Insert(apply)
 	this.dealError(err)
 	this.Data["json"] = map[string]interface{}{"status": 200, "id": id, "time": time.Now().Format("2006-01-02 15:04:05")}

@@ -13,8 +13,10 @@ type TApply struct {
 	UserId int64 											    //谁发出的申请
 	ToId int64												    //发给谁的
 	Msg string													//申请留言
-	Username string
+	Username string													
 	Icon string
+	FromCategoryId int64										//发起人好友分组编号
+	ToCategoryId	int64										//被添加人好友分组编号
 	CreateTime time.Time `orm:"auto_now_add;type(datetime)"`	//创建时间
 }
 
