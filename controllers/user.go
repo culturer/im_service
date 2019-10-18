@@ -216,7 +216,7 @@ func (this *UserController) addApply() {
 	logs.Info("friendId : ", friendId)
 	this.dealError(err)
 	//查询，去重
-	sql := fmt.Sprintf("select * from t_apply where user_id=%d and to_id= friendId ")
+	sql := fmt.Sprintf("select * from t_apply where user_id=%d and to_id= %d ", userId, friendId)
 	o.Raw(sql).QueryRow(&apply)
 	//err = o.QueryTable("t_apply").Filter("user_id",userId).Filter("to_id",friendId).One(&apply)
 	this.dealError(err)
