@@ -59,6 +59,9 @@ const getApplyList = 13
 //查看好友信息
 const getUserInfo = 14
 
+//处理好友请求 通过，拒绝，忽略
+const optionApply  = 15
+
 func (this *UserController) Get() {
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "test", "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
@@ -102,6 +105,8 @@ func (this *UserController) Post() {
 			this.getApplyList()
 		case getUserInfo:
 			this.getUserInfo()
+		case optionApply:
+			this.optionApply()
 		default:
 			this.Data["json"] = map[string]interface{}{"status": 400, "msg": "没有对应处理方法", "time": time.Now().Format("2006-01-02 15:04:05")}
 			this.ServeJSON()
@@ -336,6 +341,29 @@ func (this *UserController) getUserInfo() {
 	this.ServeJSON()
 	return
 }
+
+func (this *UserController)optionApply() {
+
+	do,err:= this.GetInt8("do",0)
+	this.dealError(err)
+	applyId, err := this.GetInt64("applyId", -1)
+	this.dealError(err)
+	logs.Info("applyId",applyId)
+	var apply models.TApply
+	o := orm.NewOrm()
+	sql := fmt.Sprintf("select * from t_apply where id=%d  ", applyId)
+	logs.Info("sql :", sql)
+	o.Raw(sql).QueryRow(&apply)
+	apply.Status = do
+	_, err = o.Update(&apply)
+	this.dealError(err)
+	this.Data["json"] = map[string]interface{}{"status": 200,"apply_status":apply.Status, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
+
+}
+
+
 
 func (this *UserController) dealError(err error) {
 	if err != nil {

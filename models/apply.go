@@ -9,7 +9,7 @@ import (
 type TApply struct {
 	Id             int64
 	Type           int    //申请类型 亲戚，好友，群，家庭
-	Status         int8   //申请是否通过 0已发送 ，1已同意 ，2已拒绝
+	Status         int8   //申请是否通过 0已发送 ，1已同意 ，2已拒绝 ， 3忽略
 	UserId         int64  //谁发出的申请
 	ToId           int64  //发给谁的
 	Msg            string //申请留言
