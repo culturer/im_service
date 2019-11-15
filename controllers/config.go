@@ -14,9 +14,8 @@ type ConfigController struct {
 
 const get7NiuToken = 0
 
-
 func (this *ConfigController) Post() {
-	options,err := this.GetInt("options",-1)
+	options, err := this.GetInt("options", -1)
 	this.dealError(err)
 	//检查请求的方法
 	if options != -1 {
@@ -32,10 +31,9 @@ func (this *ConfigController) Post() {
 }
 
 func (this *ConfigController) get7NiuToken() {
-
 	accessKey := beego.AppConfig.String("qiniu_AK")
 	secretKey := beego.AppConfig.String("qiniu_SK")
-	bucket:= beego.AppConfig.String("qiniu_Bucket")
+	bucket := beego.AppConfig.String("qiniu_Bucket")
 	putPolicy := storage.PutPolicy{
 		Scope: bucket,
 	}
@@ -47,8 +45,8 @@ func (this *ConfigController) get7NiuToken() {
 }
 
 func (this *ConfigController) dealError(err error) {
-	if err !=nil {
-		logs.Error("ConfigController",err.Error())
+	if err != nil {
+		logs.Error("ConfigController", err.Error())
 		this.Data["json"] = map[string]interface{}{"status": 400, "msg": err.Error(), "time": time.Now().Format("2006-01-02 15:04:05")}
 		this.ServeJSON()
 		return

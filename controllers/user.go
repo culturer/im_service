@@ -60,7 +60,7 @@ const getApplyList = 13
 const getUserInfo = 14
 
 //处理好友请求 通过，拒绝，忽略
-const optionApply  = 15
+const optionApply = 15
 
 func (this *UserController) Get() {
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "test", "time": time.Now().Format("2006-01-02 15:04:05")}
@@ -226,9 +226,6 @@ func (this *UserController) addApply() {
 	//err = o.QueryTable("t_apply").Filter("user_id",userId).Filter("to_id",friendId).One(&apply)
 	this.dealError(err)
 
-	fromCategoryId, err := this.GetInt64("fromCategoryId", -1)
-	this.dealError(err)
-	logs.Info("fromCategoryId : ", fromCategoryId)
 	msg := this.GetString("msg", "")
 	logs.Info("msg : ", msg)
 	fromUsername := this.GetString("fromUsername", "")
@@ -243,7 +240,6 @@ func (this *UserController) addApply() {
 
 	apply.Msg = msg
 	apply.CreateTime = time.Now()
-	apply.FromCategoryId = fromCategoryId
 	apply.FromUsername = fromUsername
 	apply.FromIcon = fromIcon
 	apply.ToUsername = toUsername
@@ -276,32 +272,27 @@ func (this *UserController) addApply() {
 	}
 }
 
-//添加好友
 func (this *UserController) addUserList() {
-	var apply models.TApply
+	logs.Info("do addUserList ... ")
 	var user models.TUser
 	var userList models.TUserList
-	tel := this.GetString("tel", "")
 	msg := this.GetString("msg", "")
 	userId, err := this.GetInt64("userId", -1)
-	applyId, err := this.GetInt64("applyId", -1)
+	friendId, err := this.GetInt64("friendId", -1)
 	categoryId, err := this.GetInt64("categoryId", -1)
 	this.dealError(err)
 	o := orm.NewOrm()
-	err = o.QueryTable("t_apply").Filter("id", applyId).One(&apply)
-	this.dealError(err)
-	apply.Status = 0
-	_, err = o.Update(apply)
-	this.dealError(err)
-	err = o.QueryTable("t_user").Filter("tel", tel).RelatedSel().One(&user)
+	err = o.QueryTable("t_user").Filter("id", friendId).RelatedSel().One(&user)
 	this.dealError(err)
 	userList.Belong = userId
 	userList.Friend = &user
 	userList.CategoryId = categoryId
 	userList.Msg = msg
 	userList.Sort = 0
-	id, err := o.Insert(userList)
-	this.Data["json"] = map[string]interface{}{"status": 200, "id": id, "time": time.Now().Format("2006-01-02 15:04:05")}
+	id, err := o.Insert(&userList)
+	userList.Id = id
+	this.dealError(err)
+	this.Data["json"] = map[string]interface{}{"status": 200, "new_friend": userList, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
 }
@@ -342,13 +333,13 @@ func (this *UserController) getUserInfo() {
 	return
 }
 
-func (this *UserController)optionApply() {
+func (this *UserController) optionApply() {
 
-	do,err:= this.GetInt8("do",0)
+	do, err := this.GetInt8("do", 0)
 	this.dealError(err)
 	applyId, err := this.GetInt64("applyId", -1)
 	this.dealError(err)
-	logs.Info("applyId",applyId)
+	logs.Info("applyId", applyId)
 	var apply models.TApply
 	o := orm.NewOrm()
 	sql := fmt.Sprintf("select * from t_apply where id=%d  ", applyId)
@@ -357,13 +348,11 @@ func (this *UserController)optionApply() {
 	apply.Status = do
 	_, err = o.Update(&apply)
 	this.dealError(err)
-	this.Data["json"] = map[string]interface{}{"status": 200,"apply_status":apply.Status, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.Data["json"] = map[string]interface{}{"status": 200, "apply_status": apply.Status, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
 
 }
-
-
 
 func (this *UserController) dealError(err error) {
 	if err != nil {
