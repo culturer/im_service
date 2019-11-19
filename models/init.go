@@ -36,4 +36,7 @@ func RegiesterDB() {
 	orm.RegisterModel(new(TDevice))
 	orm.RegisterModel(new(TApply))
 	orm.RegisterModel(new(TVisitor))
+	orm.RegisterModel(new(TArticle))
+	orm.RegisterModel(new(TComment))
+	orm.RegisterModel(new(TLikes))
 }

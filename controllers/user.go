@@ -300,6 +300,7 @@ func (this *UserController) addUserList() {
 //获取好友列表
 func (this *UserController) getUserList() {
 	userId, err := this.GetInt64("userId", -1)
+	logs.Info("userId , ", userId)
 	this.dealError(err)
 	//查好友分类
 	var categorys []*models.TCategory
