@@ -8,7 +8,10 @@ import (
 //文章表
 type TArticle struct {
 	Id       int64
-	BelongId int64 //谁发的
+
+	BelongId int64 //作者编号
+	Icon string//作者头像
+	Username string//作者昵称
 
 	Imgs         string    //图片，存json
 	Video        string    //短视频链接
@@ -17,6 +20,7 @@ type TArticle struct {
 	LikeCount    int       //点赞数量
 	IsInvalid    bool      //是否禁止
 	CreateTime   time.Time `orm:"auto_now_add;type(datetime)"` //创建时间
+
 }
 
 //评论
