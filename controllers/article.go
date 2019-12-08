@@ -15,11 +15,16 @@ type ArticleController struct {
 
 const getFriendsArticle = 0 //获取好友动态
 const createArticle = 1     //获取好友动态
+const addComment = 2
+const addLikes = 3
+const delArticle = 4
+const addReply = 5
 
 type Article struct {
 	Article  *models.TArticle
 	Comments []*models.TComment
 	Likes    []*models.TLikes
+	Replys   []*models.TReply
 }
 
 func (this *ArticleController) Post() {
@@ -32,9 +37,16 @@ func (this *ArticleController) Post() {
 			this.getFriendsArticle()
 		case createArticle:
 			this.createArticle()
+		case addComment:
+			this.addComment()
+		case addLikes:
+			this.addLikes()
+		case delArticle:
+			this.delArticle()
+		case addReply:
+			this.addReply()
 		}
 	}
-
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "options is null !", "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
@@ -57,6 +69,8 @@ func (this *ArticleController) getFriendsArticle() {
 	for i := 0; i < len(tmpArticles); i++ {
 		tmpArticle := Article{}
 		tmpArticle.Article = &tmpArticles[i]
+
+		//查询评论
 		sql = fmt.Sprintf("select * from t_comment where article_id=%d order by create_time ", tmpArticles[i].Id)
 		logs.Info("sql", sql)
 		var tmpComments []*models.TComment
@@ -64,6 +78,15 @@ func (this *ArticleController) getFriendsArticle() {
 		this.dealError(err)
 		logs.Info("comment ", tmpComments)
 		tmpArticle.Comments = tmpComments
+		//查询评论的回复
+		sql = fmt.Sprintf("select * from t_reply where article_id=%d order by create_time ", tmpArticles[i].Id)
+		logs.Info("sql", sql)
+		var tmpReplys []*models.TReply
+		_, err = o.Raw(sql).QueryRows(&tmpReplys)
+		this.dealError(err)
+		logs.Info("replys ", tmpReplys)
+		tmpArticle.Replys = tmpReplys
+		//查询点赞信息
 		sql = fmt.Sprintf("select * from t_likes where article_id=%d order by create_time ", tmpArticles[i].Id)
 		var tmpLikes []*models.TLikes
 		_, err = o.Raw(sql).QueryRows(&tmpLikes)
@@ -80,6 +103,113 @@ func (this *ArticleController) getFriendsArticle() {
 
 func (this *ArticleController) createArticle() {
 
+	belongId, err := this.GetInt64("belongId", -1)
+	this.dealError(err)
+	icon := this.GetString("icon", "")
+	username := this.GetString("username", "")
+	images := this.GetString("images", "")
+	video := this.GetString("video", "")
+	content := this.GetString("content", "")
+
+	var article models.TArticle
+	article.BelongId = belongId
+	article.Icon = icon
+	article.Username = username
+	article.Imgs = images
+	article.Video = video
+	article.Content = content
+	o := orm.NewOrm()
+	articleId, err := o.Insert(&article)
+	this.dealError(err)
+	article.Id = articleId
+
+	this.Data["json"] = map[string]interface{}{"status": 200, "article": article, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
+}
+
+func (this *ArticleController) addComment() {
+	belongId, err := this.GetInt64("belongId", -1)
+	this.dealError(err)
+	articleId, err := this.GetInt64("articleId", -1)
+	this.dealError(err)
+	username := this.GetString("username", "")
+	icon := this.GetString("icon", "")
+	content := this.GetString("content", "")
+
+	var comment models.TComment
+	comment.BelongId = belongId
+	comment.ArticleId = articleId
+	comment.Username = username
+	comment.Icon = icon
+	comment.Content = content
+
+	o := orm.NewOrm()
+	commentId, err := o.Insert(&comment)
+	this.dealError(err)
+	comment.Id = commentId
+
+	this.Data["json"] = map[string]interface{}{"status": 200, "comment": comment, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
+}
+
+func (this *ArticleController) addLikes() {
+	belongId, err := this.GetInt64("belongId", -1)
+	this.dealError(err)
+	articleId, err := this.GetInt64("articleId", -1)
+	this.dealError(err)
+	username := this.GetString("username", "")
+	icon := this.GetString("icon", "")
+
+	var like models.TLikes
+	like.Icon = icon
+	like.BelongId = belongId
+	like.ArticleId = articleId
+	like.Username = username
+
+	o := orm.NewOrm()
+	likeId, err := o.Insert(&like)
+	this.dealError(err)
+	like.Id = likeId
+
+	this.Data["json"] = map[string]interface{}{"status": 200, "like": like, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
+}
+
+func (this *ArticleController) delArticle() {
+
+}
+
+func (this *ArticleController) addReply() {
+
+	belongId, err := this.GetInt64("belongId", -1)
+	this.dealError(err)
+	articleId, err := this.GetInt64("articleId", -1)
+	this.dealError(err)
+	commentId, err := this.GetInt64("commentId", -1)
+	this.dealError(err)
+	username := this.GetString("username", "")
+	icon := this.GetString("icon", "")
+	content := this.GetString("content", "")
+
+	var reply models.TReply
+	reply.Username = username
+	reply.BelongId = belongId
+	reply.ArticleId = articleId
+	reply.CommentId = commentId
+	reply.Icon = icon
+	reply.Content = content
+
+	o := orm.NewOrm()
+	replyId, err := o.Insert(&reply)
+	this.dealError(err)
+	reply.Id = replyId
+
+	this.Data["json"] = map[string]interface{}{"status": 200, "reply": reply, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
 }
 
 func (this *ArticleController) dealError(err error) {
