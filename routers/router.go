@@ -11,4 +11,6 @@ func init() {
 	beego.Router("/group", &controllers.GroupController{})
 	beego.Router("/config", &controllers.ConfigController{})
 	beego.Router("/article", &controllers.ArticleController{})
+	beego.Router("/recommend", &controllers.RecommendController{})
+	beego.Router("/circle", &controllers.CircleController{})
 }

@@ -14,18 +14,12 @@ type ArticleController struct {
 }
 
 const getFriendsArticle = 0 //获取好友动态
-const createArticle = 1     //获取好友动态
-const addComment = 2
-const addLikes = 3
-const delArticle = 4
-const addReply = 5
-
-type Article struct {
-	Article  *models.TArticle
-	Comments []*models.TComment
-	Likes    []*models.TLikes
-	Replys   []*models.TReply
-}
+const createArticle = 1     //创建动态
+const addComment = 2        //新增评论
+const addLikes = 3          //点赞
+const delArticle = 4        //删除文章
+const addReply = 5          //回复评论
+const getSelfArticle = 6    //获取自己的动态
 
 func (this *ArticleController) Post() {
 	options, err := this.GetInt("options", -1)
@@ -45,6 +39,8 @@ func (this *ArticleController) Post() {
 			this.delArticle()
 		case addReply:
 			this.addReply()
+		case getSelfArticle:
+			this.getSelfArticle()
 		}
 	}
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "options is null !", "time": time.Now().Format("2006-01-02 15:04:05")}
@@ -60,7 +56,7 @@ func (this *ArticleController) getFriendsArticle() {
 	pageSize, err := beego.AppConfig.Int("article_page_size")
 	this.dealError(err)
 	var tmpArticles []models.TArticle
-	sql := fmt.Sprintf("select * from t_article where belong_id=%d order by create_time desc limit %d,%d ", userId, page*pageSize, pageSize)
+	sql := fmt.Sprintf("select * from t_article where belong_id=%d or belong_id in (select friend from t_user_list where belong=%d) order by create_time desc limit %d,%d ", userId, userId, page*pageSize, pageSize)
 	o := orm.NewOrm()
 	_, err = o.Raw(sql).QueryRows(&tmpArticles)
 	logs.Info("articles ", tmpArticles)
@@ -69,7 +65,6 @@ func (this *ArticleController) getFriendsArticle() {
 	for i := 0; i < len(tmpArticles); i++ {
 		tmpArticle := Article{}
 		tmpArticle.Article = &tmpArticles[i]
-
 		//查询评论
 		sql = fmt.Sprintf("select * from t_comment where article_id=%d order by create_time ", tmpArticles[i].Id)
 		logs.Info("sql", sql)
@@ -179,7 +174,22 @@ func (this *ArticleController) addLikes() {
 }
 
 func (this *ArticleController) delArticle() {
-
+	articleId, err := this.GetInt64("articleId", -1)
+	logs.Info("articleId:", articleId)
+	this.dealError(err)
+	belongId, err := this.GetInt64("belongId", -1)
+	logs.Info("belongId:", belongId)
+	this.dealError(err)
+	o := orm.NewOrm()
+	_, err = o.Delete(&models.TArticle{Id: articleId, BelongId: belongId})
+	this.dealError(err)
+	_, err = o.Delete(&models.TComment{ArticleId: articleId})
+	this.dealError(err)
+	_, err = o.Delete(&models.TLikes{ArticleId: articleId})
+	this.dealError(err)
+	this.Data["json"] = map[string]interface{}{"status": 200, "msg": "del article success !", "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
 }
 
 func (this *ArticleController) addReply() {
@@ -210,6 +220,10 @@ func (this *ArticleController) addReply() {
 	this.Data["json"] = map[string]interface{}{"status": 200, "reply": reply, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
+}
+
+func (this *ArticleController) getSelfArticle() {
+
 }
 
 func (this *ArticleController) dealError(err error) {
