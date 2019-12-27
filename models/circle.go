@@ -43,8 +43,6 @@ type TCGrad struct {
 type TCUser struct {
 	Id          int64
 	UserId      int64     //用户编号
-	Username    string    //用户名
-	UserIcon    string    //用户头像
 	CircleId    int64     //圈子编号
 	CircleGrad  int8      //圈子等级
 	SignTime    time.Time `orm:"type(datetime)"`

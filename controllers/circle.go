@@ -18,10 +18,12 @@ const getCircleClassArticles = 1 //获取精华动态
 const getShopDatas = 2           //获取商城动态
 const getCircleInfo = 3          //获取圈子基本信息
 const getCuserInfo = 4           //获取圈子对应的用户信息
-//const getClass = 5
+const searchCircle = 5           //搜索圈子
+const getRecommendsLabel = 6     //搜索圈子
 
 func (this *CircleController) Post() {
 	options, err := this.GetInt("options", -1)
+	logs.Info(options)
 	this.dealError(err)
 	//检查请求的方法
 	if options != -1 {
@@ -36,8 +38,10 @@ func (this *CircleController) Post() {
 			this.getCircleInfo()
 		case getCuserInfo:
 			this.getCuserInfo()
-			//case addReply:
-			//	this.addReply()
+		case searchCircle:
+			this.searchCircle()
+		case getRecommends:
+			this.getRecommendsLabel()
 		}
 	}
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "options is null !", "time": time.Now().Format("2006-01-02 15:04:05")}
@@ -160,6 +164,7 @@ func (this *CircleController) getCircleInfo() {
 }
 
 func (this *CircleController) getCuserInfo() {
+
 	userId, err := this.GetInt64("userId", -1)
 	this.dealError(err)
 	circleId, err := this.GetInt64("circleId", -1)
@@ -170,6 +175,32 @@ func (this *CircleController) getCuserInfo() {
 	this.Data["json"] = map[string]interface{}{"status": 200, "cuser": cuser, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
+}
+
+func (this *CircleController) searchCircle() {
+	match := this.GetString("match", "")
+	if match != "" {
+		var circle models.TCircle
+		o := orm.NewOrm()
+		err := o.QueryTable("t_circle").Filter("name", match).One(&circle)
+		this.dealError(err)
+		//var relative []*models.TCircle
+		//sql := fmt.Sprintf("select * from t_circle where name LIKE %s", match)
+		this.Data["json"] = map[string]interface{}{"status": 200, "circle": circle, "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	} else {
+		this.Data["json"] = map[string]interface{}{"status": 400, "msg": "match is null !", "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	}
+}
+
+func (this *CircleController) getRecommendsLabel() {
+	userId, err := this.GetInt64("userId", -1)
+	this.dealError(err)
+	logs.Info("userId --- ", userId)
+
 }
 
 func (this *CircleController) dealError(err error) {
