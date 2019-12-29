@@ -19,10 +19,8 @@ type TCManager struct {
 	Id          int64
 	CircleId    int64     //管理的圈子编号
 	ManagerGrad int32     //管理员等级
-	Username    string    //用户名
-	UserIcon    string    //用户头像
 	UserId      int64     //用户编号
-	ViewCount   int64     //
+	ViewCount   int64     //浏览数
 	SignTime    time.Time `orm:"type(datetime)"`
 	SignCount   int64     //签到次数
 	SignAlian   int64     //连续签到数

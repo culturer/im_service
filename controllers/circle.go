@@ -40,7 +40,7 @@ func (this *CircleController) Post() {
 			this.getCuserInfo()
 		case searchCircle:
 			this.searchCircle()
-		case getRecommends:
+		case getRecommendsLabel:
 			this.getRecommendsLabel()
 		}
 	}
