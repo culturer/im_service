@@ -8,3 +8,8 @@ type Article struct {
 	Likes    []*models.TLikes
 	Replys   []*models.TReply
 }
+
+type Circle struct {
+	CUser  *models.TCUser
+	Circle *models.TCircle
+}

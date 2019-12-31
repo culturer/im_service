@@ -20,6 +20,11 @@ const getCircleInfo = 3          //获取圈子基本信息
 const getCuserInfo = 4           //获取圈子对应的用户信息
 const searchCircle = 5           //搜索圈子
 const getRecommendsLabel = 6     //搜索圈子
+const checkCircleName = 7        //圈子核名
+const createCircle = 8           //新建圈子
+const getCircleList = 9          //获取圈子列表
+const signCircle = 10            //圈子签到
+const focusCircle = 11           //关注圈子
 
 func (this *CircleController) Post() {
 	options, err := this.GetInt("options", -1)
@@ -42,6 +47,16 @@ func (this *CircleController) Post() {
 			this.searchCircle()
 		case getRecommendsLabel:
 			this.getRecommendsLabel()
+		case checkCircleName:
+			this.checkCircleName()
+		case createCircle:
+			this.createCircle()
+		case getCircleList:
+			this.getCircleList()
+		case signCircle:
+			this.signCircle()
+		case focusCircle:
+			this.focusCircle()
 		}
 	}
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "options is null !", "time": time.Now().Format("2006-01-02 15:04:05")}
@@ -201,6 +216,112 @@ func (this *CircleController) getRecommendsLabel() {
 	this.dealError(err)
 	logs.Info("userId --- ", userId)
 
+}
+
+func (this *CircleController) checkCircleName() {
+	name := this.GetString("name", "")
+	logs.Info(name)
+	if name != "" {
+		var circle models.TCircle
+		o := orm.NewOrm()
+		err := o.QueryTable("t_circle").Filter("name", name).One(&circle)
+		if err != nil && err.Error() == "<QuerySeter> no row found" {
+			this.Data["json"] = map[string]interface{}{"status": 200, "msg": err.Error(), "time": time.Now().Format("2006-01-02 15:04:05")}
+			this.ServeJSON()
+			return
+		}
+		this.dealError(err)
+	} else {
+		this.Data["json"] = map[string]interface{}{"status": 400, "msg": "参数错误", "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	}
+}
+
+func (this *CircleController) createCircle() {
+	name := this.GetString("name", "")
+	msg := this.GetString("msg", "")
+	icon := this.GetString("icon", "")
+	belong1, err := this.GetInt64("belong1")
+	this.dealError(err)
+	belong2, err := this.GetInt64("belong2")
+	this.dealError(err)
+	circle := models.TCircle{Name: name, Msg: msg, Icon: icon, Belong2: belong2, Belong1: belong1}
+	o := orm.NewOrm()
+	_id, err := o.Insert(&circle)
+	circle.Id = _id
+	cUser := models.TCUser{UserId: belong1, CircleId: circle.Id, CircleGrad: 0, SignTime: time.Now(), SignCount: 0, SignAlian: 0, ReplyCount: 0, ReplyLen: 0, ViewCount: 0, GetDataTime: time.Now()}
+	cUserId, err := o.Insert(&cUser)
+	cUser.Id = cUserId
+	this.dealError(err)
+	this.Data["json"] = map[string]interface{}{"status": 200, "circle": circle, "cuser": cUser, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
+}
+
+func (this *CircleController) getCircleList() {
+	userId, err := this.GetInt64("userId")
+	this.dealError(err)
+	//var circles []*Circle
+	var cusers []*models.TCUser
+	sql := fmt.Sprintf("select * from t_c_user where user_id = %d  order by circle_grad ", userId)
+	o := orm.NewOrm()
+	_, err = o.Raw(sql).QueryRows(&cusers)
+	if cusers == nil || len(cusers) == 0 {
+		this.Data["json"] = map[string]interface{}{"status": 400, "msg": "还没有关注圈子哦！", "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	}
+	var circles []*models.TCircle
+	sql1 := fmt.Sprintf("select * from t_circle where id in (select circle_id from t_c_user where user_id = %d )", userId)
+	_, err = o.Raw(sql1).QueryRows(&circles)
+	this.Data["json"] = map[string]interface{}{"status": 200, "circle": circles, "cusers": cusers, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
+}
+
+func (this *CircleController) signCircle() {
+	userId, err := this.GetInt64("userId")
+	this.dealError(err)
+	circleId, err := this.GetInt64("circleId")
+	this.dealError(err)
+	var cuser models.TCUser
+	o := orm.NewOrm()
+	err = o.QueryTable("t_c_user").Filter("user_id", userId).Filter("circle_id", circleId).One(&cuser)
+	this.dealError(err)
+	if cuser.SignTime.Day() == time.Now().Day() {
+		this.Data["json"] = map[string]interface{}{"status": 400, "msg": "今天已经签到过了哦！", "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	} else {
+		if cuser.SignTime.AddDate(0, 0, 1).Day() == time.Now().Day() {
+			cuser.SignAlian = cuser.SignAlian + 1
+		} else {
+			cuser.SignAlian = 1
+		}
+		cuser.SignTime = time.Now()
+		cuser.SignCount = cuser.SignCount + 1
+		_, err = o.Update(cuser)
+		this.dealError(err)
+		this.Data["json"] = map[string]interface{}{"status": 200, "msg": "签到成功！", "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	}
+}
+
+func (this *CircleController) focusCircle() {
+	userId, err := this.GetInt64("userId")
+	this.dealError(err)
+	circleId, err := this.GetInt64("circleId")
+	this.dealError(err)
+	cuser := models.TCUser{CircleId: circleId, UserId: userId, SignTime: time.Now(), SignCount: 0, SignAlian: 0, CircleGrad: 0, ReplyLen: 0, ReplyCount: 0, ViewCount: 0}
+	o := orm.NewOrm()
+	cUserId, err := o.Insert(&cuser)
+	cuser.Id = cUserId
+	this.dealError(err)
+	this.Data["json"] = map[string]interface{}{"status": 200, "cuser": cuser, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
 }
 
 func (this *CircleController) dealError(err error) {

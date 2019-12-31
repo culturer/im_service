@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 //圈子表
 type TCircle struct {
@@ -50,6 +53,20 @@ type TCUser struct {
 	ReplyLen    int64     //回复字数
 	ViewCount   int64     //浏览帖子数
 	GetDataTime time.Time `orm:"type(datetime)"` //上次请求数据的时间
+}
+
+func (this TCUser) MarshalJSON() ([]byte, error) {
+	// 定义一个该结构体的别名
+	type tUser TCUser
+	// 定义一个新的结构体
+	tmpTCUser := struct {
+		tUser
+		SignTime string `json:"CreateTime"`
+	}{
+		tUser:    (tUser)(this),
+		SignTime: this.SignTime.Format("2006-01-02 15:04:05"),
+	}
+	return json.Marshal(tmpTCUser)
 }
 
 //圈子对应的帖子编号
