@@ -42,7 +42,6 @@ func RegiesterDB() {
 	orm.RegisterModel(new(TLikes))
 	orm.RegisterModel(new(TCircle))
 	orm.RegisterModel(new(TCManager))
-	orm.RegisterModel(new(TCGrad))
 	orm.RegisterModel(new(TCUser))
 	orm.RegisterModel(new(TCArticle))
 	orm.RegisterModel(new(TCClassArticle))

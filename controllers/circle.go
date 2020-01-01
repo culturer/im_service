@@ -72,7 +72,10 @@ func (this *CircleController) getCircleArticles() {
 	circleId, err := this.GetInt64("circleId", -1)
 	this.dealError(err)
 	var tmpArticles []models.TArticle
-	sql := fmt.Sprintf("select * from t_article where article_id in (select article_id from t_c_article where circle_id = %d)  order by create_time desc limit %d,%d ", circleId, pageSize, pageCount)
+	//备用sql,调试成功后删除
+	sql := fmt.Sprintf("select * from t_article where id in (select article_id from t_c_article where circle_id = %d)  order by create_time desc limit %d,%d ", circleId, pageCount, pageSize)
+	logs.Info(sql)
+	//sql := fmt.Sprintf("select * from t_article where id in (select article_id from t_c_article where circle_id = %d)  order by create_time desc  ", circleId)
 	o := orm.NewOrm()
 	_, err = o.Raw(sql).QueryRows(&tmpArticles)
 	this.dealError(err)
@@ -169,11 +172,7 @@ func (this *CircleController) getCircleInfo() {
 	var circle models.TCircle
 	err = o.QueryTable("t_circle").Filter("id", circleId).One(&circle)
 	this.dealError(err)
-	var grads []*models.TCGrad
-	sql := fmt.Sprintf("select * from t_c_grad where circle_id=%d", circleId)
-	_, err = o.Raw(sql).QueryRows(&grads)
-	this.dealError(err)
-	this.Data["json"] = map[string]interface{}{"status": 200, "circle": circle, "grads": grads, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.Data["json"] = map[string]interface{}{"status": 200, "circle": circle, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
 }
@@ -285,23 +284,23 @@ func (this *CircleController) signCircle() {
 	this.dealError(err)
 	circleId, err := this.GetInt64("circleId")
 	this.dealError(err)
-	var cuser models.TCUser
+	var cUser models.TCUser
 	o := orm.NewOrm()
-	err = o.QueryTable("t_c_user").Filter("user_id", userId).Filter("circle_id", circleId).One(&cuser)
+	err = o.QueryTable("t_c_user").Filter("user_id", userId).Filter("circle_id", circleId).One(&cUser)
 	this.dealError(err)
-	if cuser.SignTime.Day() == time.Now().Day() {
+	if cUser.SignTime.Day() == time.Now().Day() {
 		this.Data["json"] = map[string]interface{}{"status": 400, "msg": "今天已经签到过了哦！", "time": time.Now().Format("2006-01-02 15:04:05")}
 		this.ServeJSON()
 		return
 	} else {
-		if cuser.SignTime.AddDate(0, 0, 1).Day() == time.Now().Day() {
-			cuser.SignAlian = cuser.SignAlian + 1
+		if cUser.SignTime.AddDate(0, 0, 1).Day() == time.Now().Day() {
+			cUser.SignAlian = cUser.SignAlian + 1
 		} else {
-			cuser.SignAlian = 1
+			cUser.SignAlian = 1
 		}
-		cuser.SignTime = time.Now()
-		cuser.SignCount = cuser.SignCount + 1
-		_, err = o.Update(cuser)
+		cUser.SignTime = time.Now()
+		cUser.SignCount = cUser.SignCount + 1
+		_, err = o.Update(&cUser)
 		this.dealError(err)
 		this.Data["json"] = map[string]interface{}{"status": 200, "msg": "签到成功！", "time": time.Now().Format("2006-01-02 15:04:05")}
 		this.ServeJSON()
@@ -319,7 +318,7 @@ func (this *CircleController) focusCircle() {
 	cUserId, err := o.Insert(&cuser)
 	cuser.Id = cUserId
 	this.dealError(err)
-	this.Data["json"] = map[string]interface{}{"status": 200, "cuser": cuser, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.Data["json"] = map[string]interface{}{"status": 200, "msg": "success", "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
 }

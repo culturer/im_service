@@ -31,14 +31,14 @@ type TCManager struct {
 	ReplyLen    int64     //回复字数
 }
 
-//圈子等级
-type TCGrad struct {
-	Id        int64
-	CircleId  int64  //圈子编号
-	GradnName string //圈子名称
-	GradCount int8   //具体的等级数
-	IsManager bool   //是否是管理员等级
-}
+////圈子等级
+//type TCGrad struct {
+//	Id        int64
+//	CircleId  int64  //圈子编号
+//	GradnName string //圈子名称
+//	GradCount int8   //具体的等级数
+//	IsManager bool   //是否是管理员等级
+//}
 
 //圈子用户对应的表
 type TCUser struct {
@@ -57,16 +57,21 @@ type TCUser struct {
 
 func (this TCUser) MarshalJSON() ([]byte, error) {
 	// 定义一个该结构体的别名
-	type tUser TCUser
+	type user TCUser
 	// 定义一个新的结构体
-	tmpTCUser := struct {
-		tUser
-		SignTime string `json:"CreateTime"`
+	tmpStudent := struct {
+		user
+		SignTime    string `json:"SignTime"`
+		GetDataTime string `json:"GetDataTime"`
+		CreateTime  string `json:"CreateTime"`
+		LoginTime   string `json:"LoginTime"`
+		BanTime     string `json:"BanTime"`
 	}{
-		tUser:    (tUser)(this),
-		SignTime: this.SignTime.Format("2006-01-02 15:04:05"),
+		user:        (user)(this),
+		SignTime:    this.SignTime.Format("2006-01-02 15:04:05"),
+		GetDataTime: this.GetDataTime.Format("2006-01-02 15:04:05"),
 	}
-	return json.Marshal(tmpTCUser)
+	return json.Marshal(tmpStudent)
 }
 
 //圈子对应的帖子编号
