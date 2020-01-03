@@ -122,7 +122,7 @@ func (this *CircleController) getCircleClassArticles() {
 	circleId, err := this.GetInt64("circleId", -1)
 	this.dealError(err)
 	var tmpArticles []models.TArticle
-	sql := fmt.Sprintf("select * from t_article where article_id in (select article_id from t_c_class_article where circle_id = %d)  order by create_time desc limit %d,%d ", circleId, pageSize, pageCount)
+	sql := fmt.Sprintf("select * from t_article where id in (select article_id from t_c_article where circle_id = %d) and article_id in (select article_id from t_comment group by article_id having count(*)>20) order by create_time desc limit %d,%d ", circleId, pageSize, pageCount)
 	o := orm.NewOrm()
 	_, err = o.Raw(sql).QueryRows(&tmpArticles)
 	this.dealError(err)
@@ -309,16 +309,17 @@ func (this *CircleController) signCircle() {
 }
 
 func (this *CircleController) focusCircle() {
+	logs.Info("关注圈子")
 	userId, err := this.GetInt64("userId")
 	this.dealError(err)
 	circleId, err := this.GetInt64("circleId")
 	this.dealError(err)
-	cuser := models.TCUser{CircleId: circleId, UserId: userId, SignTime: time.Now(), SignCount: 0, SignAlian: 0, CircleGrad: 0, ReplyLen: 0, ReplyCount: 0, ViewCount: 0}
+	cuser := models.TCUser{CircleId: circleId, UserId: userId, SignTime: time.Now(), SignCount: 0, SignAlian: 0, CircleGrad: 0, ReplyLen: 0, ReplyCount: 0, ViewCount: 0, GetDataTime: time.Now()}
 	o := orm.NewOrm()
 	cUserId, err := o.Insert(&cuser)
 	cuser.Id = cUserId
 	this.dealError(err)
-	this.Data["json"] = map[string]interface{}{"status": 200, "msg": "success", "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.Data["json"] = map[string]interface{}{"status": 200, "cuser": cuser, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
 }

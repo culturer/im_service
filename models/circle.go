@@ -31,15 +31,6 @@ type TCManager struct {
 	ReplyLen    int64     //回复字数
 }
 
-////圈子等级
-//type TCGrad struct {
-//	Id        int64
-//	CircleId  int64  //圈子编号
-//	GradnName string //圈子名称
-//	GradCount int8   //具体的等级数
-//	IsManager bool   //是否是管理员等级
-//}
-
 //圈子用户对应的表
 type TCUser struct {
 	Id          int64

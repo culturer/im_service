@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -106,6 +107,13 @@ func (this *ArticleController) createArticle() {
 	video := this.GetString("video", "")
 	content := this.GetString("content", "")
 
+	strCircleIds := this.GetString("circleIds", "")
+	logs.Info("strCircleIds:", strCircleIds)
+	var circleIds []int64
+	err = json.Unmarshal([]byte(strCircleIds), &circleIds)
+	this.dealError(err)
+	logs.Info("CircleIds", circleIds)
+
 	var article models.TArticle
 	article.BelongId = belongId
 	article.Icon = icon
@@ -117,6 +125,14 @@ func (this *ArticleController) createArticle() {
 	articleId, err := o.Insert(&article)
 	this.dealError(err)
 	article.Id = articleId
+
+	for i := 0; i < len(circleIds); i++ {
+		var cArticle models.TCArticle
+		cArticle.CircleId = circleIds[i]
+		cArticle.ArticleId = articleId
+		_, err = o.Insert(&cArticle)
+		this.dealError(err)
+	}
 
 	this.Data["json"] = map[string]interface{}{"status": 200, "article": article, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
