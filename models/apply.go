@@ -6,9 +6,20 @@ import (
 )
 
 //好友,群，亲戚申请
+
+const StatusSend int8 = 0
+const StatusAgree int8 = 1
+const StatusRefuse int8 = 2
+const StatusIgnore int8 = 3
+
+const TypeRelations = 0
+const TypeFriends = 1
+const TypeGroups = 2
+const TypeHomes = 3
+
 type TApply struct {
 	Id           int64
-	Type         int    //申请类型 亲戚，好友，群，家庭
+	Type         int8   //申请类型 亲戚，好友，群，家庭
 	Status       int8   //申请是否通过 0已发送 ，1已同意 ，2已拒绝 ， 3忽略
 	UserId       int64  //谁发出的申请
 	ToId         int64  //发给谁的

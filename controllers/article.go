@@ -59,7 +59,6 @@ func (this *ArticleController) getFriendsArticle() {
 	sql := fmt.Sprintf("select * from t_article where belong_id=%d or belong_id in (select friend from t_user_list where belong=%d) order by create_time desc limit %d,%d ", userId, userId, page*pageSize, pageSize)
 	o := orm.NewOrm()
 	_, err = o.Raw(sql).QueryRows(&tmpArticles)
-	logs.Info("articles ", tmpArticles)
 	this.dealError(err)
 	articles := make([]Article, 0)
 	for i := 0; i < len(tmpArticles); i++ {
@@ -71,7 +70,6 @@ func (this *ArticleController) getFriendsArticle() {
 		var tmpComments []*models.TComment
 		_, err = o.Raw(sql).QueryRows(&tmpComments)
 		this.dealError(err)
-		logs.Info("comment ", tmpComments)
 		tmpArticle.Comments = tmpComments
 		//查询评论的回复
 		sql = fmt.Sprintf("select * from t_reply where article_id=%d order by create_time ", tmpArticles[i].Id)
@@ -79,17 +77,14 @@ func (this *ArticleController) getFriendsArticle() {
 		var tmpReplys []*models.TReply
 		_, err = o.Raw(sql).QueryRows(&tmpReplys)
 		this.dealError(err)
-		logs.Info("replys ", tmpReplys)
 		tmpArticle.Replys = tmpReplys
 		//查询点赞信息
 		sql = fmt.Sprintf("select * from t_likes where article_id=%d order by create_time ", tmpArticles[i].Id)
 		var tmpLikes []*models.TLikes
 		_, err = o.Raw(sql).QueryRows(&tmpLikes)
 		this.dealError(err)
-		logs.Info("likes", tmpLikes)
 		tmpArticle.Likes = tmpLikes
 		articles = append(articles, tmpArticle)
-		logs.Info("articles", articles)
 	}
 	this.Data["json"] = map[string]interface{}{"status": 200, "articles": articles, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()

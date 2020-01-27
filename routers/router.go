@@ -13,4 +13,5 @@ func init() {
 	beego.Router("/article", &controllers.ArticleController{})
 	beego.Router("/recommend", &controllers.RecommendController{})
 	beego.Router("/circle", &controllers.CircleController{})
+	beego.Router("/apply", &controllers.ApplyController{})
 }

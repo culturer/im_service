@@ -191,7 +191,26 @@ func (this *UserController) updateUserList() {
 
 //删除好友
 func (this *UserController) delUserList() {
-
+	userId, err := this.GetInt64("userId", -1)
+	this.dealError(err)
+	friendId, err := this.GetInt64("friendId", -1)
+	this.dealError(err)
+	logs.Info("userId --- ", userId, " , friendId --- ", friendId)
+	o := orm.NewOrm()
+	var userList []*models.TUserList
+	o.QueryTable("t_user_list").Filter("belong", userId).RelatedSel().All(&userList)
+	for i := 0; i < len(userList); i++ {
+		if userList[i].Friend.Id == friendId {
+			_, err = o.Delete(userList[i])
+			this.dealError(err)
+			this.Data["json"] = map[string]interface{}{"status": 200, "msg": "success", "time": time.Now().Format("2006-01-02 15:04:05")}
+			this.ServeJSON()
+			return
+		}
+	}
+	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "没有该好友", "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
 }
 
 //获取添加好友列表
@@ -211,6 +230,7 @@ func (this *UserController) getApplyList() {
 
 //申请添加好友
 func (this *UserController) addApply() {
+
 	logs.Info("addApply")
 	o := orm.NewOrm()
 	var apply models.TApply
@@ -253,7 +273,7 @@ func (this *UserController) addApply() {
 		this.ServeJSON()
 		return
 	} else {
-		myType, err := this.GetInt("type", 0)
+		myType, err := this.GetInt8("type", 0)
 		this.dealError(err)
 		logs.Info("myType : ", myType)
 
@@ -268,8 +288,8 @@ func (this *UserController) addApply() {
 		this.Data["json"] = map[string]interface{}{"status": 200, "apply": apply, "time": time.Now().Format("2006-01-02 15:04:05")}
 		this.ServeJSON()
 		return
-
 	}
+
 }
 
 func (this *UserController) addUserList() {

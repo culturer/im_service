@@ -46,6 +46,7 @@ func (this *RecommendController) Post() {
 }
 
 func (this *RecommendController) getRecommends() {
+
 	userId, err := this.GetInt64("userId", -1)
 	this.dealError(err)
 	sex, err := this.GetBool("sex", false)
