@@ -293,6 +293,7 @@ func (this *UserController) addApply() {
 }
 
 func (this *UserController) addUserList() {
+	//添加好友
 	logs.Info("do addUserList ... ")
 	var user models.TUser
 	var userList models.TUserList
@@ -301,6 +302,10 @@ func (this *UserController) addUserList() {
 	friendId, err := this.GetInt64("friendId", -1)
 	categoryId, err := this.GetInt64("categoryId", -1)
 	this.dealError(err)
+	fromUsername := this.GetString("fromUsername", "")
+	fromIcon := this.GetString("fromIcon", "")
+
+	//添加到好友列表
 	o := orm.NewOrm()
 	err = o.QueryTable("t_user").Filter("id", friendId).RelatedSel().One(&user)
 	this.dealError(err)
@@ -312,6 +317,43 @@ func (this *UserController) addUserList() {
 	id, err := o.Insert(&userList)
 	userList.Id = id
 	this.dealError(err)
+
+	//添加到好友申请列表
+	var apply models.TApply
+	sql := fmt.Sprintf("select * from t_apply where user_id=%d and to_id= %d ", userId, friendId)
+	o.Raw(sql).QueryRow(&apply)
+	this.dealError(err)
+
+	apply.Msg = "新朋友"
+	apply.CreateTime = time.Now()
+	apply.FromUsername = fromUsername
+	apply.FromIcon = fromIcon
+	apply.ToUsername = user.UserName
+	apply.ToIcon = user.Icon
+
+	if &apply != nil && apply.Id != 0 {
+		_, err = o.Update(&apply)
+		logs.Info("update apply", apply)
+		this.dealError(err)
+	} else {
+		myType, err := this.GetInt8("type", 0)
+		this.dealError(err)
+		myStatus, err := this.GetInt8("status", models.StatusSend)
+		this.dealError(err)
+		logs.Info("myType : ", myType)
+		apply.UserId = userId
+		apply.ToId = friendId
+		apply.Type = myType
+		apply.Status = myStatus
+
+		_, err = o.Insert(&apply)
+		this.dealError(err)
+
+	}
+
+	//发送推送消息
+
+	//返回结果
 	this.Data["json"] = map[string]interface{}{"status": 200, "new_friend": userList, "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return

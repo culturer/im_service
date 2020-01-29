@@ -43,8 +43,9 @@ func (this *ApplyController) apply_add() {
 	this.dealError(err)
 	logs.Info("userId : ", userId)
 	toId, err := this.GetInt64("toId", -1)
-	logs.Info("friendId : ", toId)
+	logs.Info("toId : ", toId)
 	this.dealError(err)
+
 	//查询，去重
 	var apply models.TApply
 	sql := fmt.Sprintf("select * from t_apply where user_id=%d and to_id= %d ", userId, toId)
@@ -68,16 +69,12 @@ func (this *ApplyController) apply_add() {
 		_, err = o.Update(&apply)
 		logs.Info("update apply", apply)
 		this.dealError(err)
-		this.Data["json"] = map[string]interface{}{"status": 200, "apply": apply, "time": time.Now().Format("2006-01-02 15:04:05")}
-		this.ServeJSON()
-		return
 	} else {
 		myType, err := this.GetInt8("type", 0)
 		this.dealError(err)
 		myStatus, err := this.GetInt8("status", models.StatusSend)
 		this.dealError(err)
 		logs.Info("myType : ", myType)
-
 		apply.UserId = userId
 		apply.ToId = toId
 		apply.Type = myType
@@ -86,10 +83,10 @@ func (this *ApplyController) apply_add() {
 		_, err = o.Insert(&apply)
 		this.dealError(err)
 
-		this.Data["json"] = map[string]interface{}{"status": 200, "apply": apply, "time": time.Now().Format("2006-01-02 15:04:05")}
-		this.ServeJSON()
-		return
 	}
+	this.Data["json"] = map[string]interface{}{"status": 200, "apply": apply, "time": time.Now().Format("2006-01-02 15:04:05")}
+	this.ServeJSON()
+	return
 }
 
 func (this *ApplyController) apply_getDatas() {

@@ -7,27 +7,28 @@ import (
 
 //用户表
 type TUser struct {
-	Id         int64
-	Name       string    `orm:"size(50)"` //名字
-	UserName   string    `orm:"size(50)"` //昵称
-	Icon       string    //头像
-	Tel        string    //手机号
-	Email      string    //邮箱
-	IdCard     string    //身份证号
-	Sex        bool      //性别
-	Pwd        string    //密码
-	Sign       string    //签名
-	City       int       //城市
-	Birth      time.Time `orm:"auto_now_add;type(datetime)"` //生日
-	Vip        time.Time `orm:"auto_now_add;type(datetime)"` //会员时间
-	VipGrad    int       //会员等级
-	Grad       int       //等级
-	CreateTime time.Time `orm:"auto_now_add;type(datetime)"` //创建时间
-	LoginTime  time.Time `orm:"auto_now_add;type(datetime)"` //最后登录时间
-	BanTime    time.Time `orm:"type(datetime)"`              //封号时间
-
-	Family *TFamily `orm:"rel(fk)"` //家庭
-
+	Id          int64
+	Name        string    `orm:"size(50)"` //名字
+	UserName    string    `orm:"size(50)"` //昵称
+	Icon        string    //头像
+	Tel         string    //手机号
+	Email       string    //邮箱
+	IdCard      string    //身份证号
+	Sex         bool      //性别
+	Pwd         string    //密码
+	Sign        string    //签名
+	City        int       //城市
+	Birth       time.Time `orm:"auto_now_add;type(datetime)"` //生日
+	Vip         time.Time `orm:"auto_now_add;type(datetime)"` //会员时间
+	VipGrad     int       //会员等级
+	Grad        int       //等级
+	CreateTime  time.Time `orm:"auto_now_add;type(datetime)"` //创建时间
+	LoginTime   time.Time `orm:"auto_now_add;type(datetime)"` //最后登录时间
+	BanTime     time.Time `orm:"type(datetime)"`              //封号时间
+	Family      *TFamily  `orm:"rel(fk)"`                     //家庭
+	DeviceToken string    //推送设备号
+	Channel     string    //手机型号
+	Plat        string    //android or ios
 }
 
 func (this TUser) MarshalJSON() ([]byte, error) {
