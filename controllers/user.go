@@ -220,7 +220,7 @@ func (this *UserController) getApplyList() {
 	o := orm.NewOrm()
 	//_,err := o.QueryTable("t_apply").Filter("user_id",userId).Filter("to_id",userId).Distinct().OrderBy("create_time").All(&applies)
 	//this.dealError(err)
-	sql := fmt.Sprintf("select * from t_apply where user_id=%d or to_id=%d order by create_time desc ", userId, userId)
+	sql := fmt.Sprintf("select * from t_apply where to_id=%d order by create_time desc ", userId)
 	logs.Info("sql :", sql)
 	o.Raw(sql).QueryRows(&applies)
 	this.Data["json"] = map[string]interface{}{"status": 200, "applies": applies, "time": time.Now().Format("2006-01-02 15:04:05")}
@@ -295,8 +295,6 @@ func (this *UserController) addApply() {
 func (this *UserController) addUserList() {
 	//添加好友
 	logs.Info("do addUserList ... ")
-	var user models.TUser
-	var userList models.TUserList
 	msg := this.GetString("msg", "")
 	userId, err := this.GetInt64("userId", -1)
 	friendId, err := this.GetInt64("friendId", -1)
@@ -307,16 +305,35 @@ func (this *UserController) addUserList() {
 
 	//添加到好友列表
 	o := orm.NewOrm()
+	var user models.TUser
 	err = o.QueryTable("t_user").Filter("id", friendId).RelatedSel().One(&user)
 	this.dealError(err)
-	userList.Belong = userId
-	userList.Friend = &user
-	userList.CategoryId = categoryId
-	userList.Msg = msg
-	userList.Sort = 0
-	id, err := o.Insert(&userList)
-	userList.Id = id
-	this.dealError(err)
+
+	var datas []models.TUserList
+	o.QueryTable("t_user_list").Filter("belong", userId).RelatedSel().All(&datas)
+
+	flag := false
+	for i := 0; i < len(datas); i++ {
+		if datas[i].Friend.Id == friendId {
+			flag = true
+			break
+		}
+	}
+	var userList models.TUserList
+	if !flag {
+		userList.Belong = userId
+		userList.Friend = &user
+		userList.CategoryId = categoryId
+		userList.Sort = 0
+
+		id, err := o.Insert(&userList)
+		this.dealError(err)
+		userList.Id = id
+	} else {
+		this.Data["json"] = map[string]interface{}{"status": 400, "msg": "该用户已经是你的好友了哦", "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	}
 
 	//添加到好友申请列表
 	var apply models.TApply
@@ -324,27 +341,34 @@ func (this *UserController) addUserList() {
 	o.Raw(sql).QueryRow(&apply)
 	this.dealError(err)
 
-	apply.Msg = "新朋友"
-	apply.CreateTime = time.Now()
-	apply.FromUsername = fromUsername
-	apply.FromIcon = fromIcon
-	apply.ToUsername = user.UserName
-	apply.ToIcon = user.Icon
-
 	if &apply != nil && apply.Id != 0 {
+		if apply.Status == models.StatusIgnore {
+			apply.Status = models.StatusSend
+		}
+		apply.Msg = msg
+		apply.CreateTime = time.Now()
+		apply.FromUsername = fromUsername
+		apply.FromIcon = fromIcon
+		apply.ToUsername = user.UserName
+		apply.ToIcon = user.Icon
 		_, err = o.Update(&apply)
 		logs.Info("update apply", apply)
 		this.dealError(err)
 	} else {
 		myType, err := this.GetInt8("type", 0)
 		this.dealError(err)
-		myStatus, err := this.GetInt8("status", models.StatusSend)
 		this.dealError(err)
 		logs.Info("myType : ", myType)
+		apply.Msg = msg
+		apply.CreateTime = time.Now()
+		apply.FromUsername = fromUsername
+		apply.FromIcon = fromIcon
+		apply.ToUsername = user.UserName
+		apply.ToIcon = user.Icon
 		apply.UserId = userId
 		apply.ToId = friendId
 		apply.Type = myType
-		apply.Status = myStatus
+		apply.Status = models.StatusSend
 
 		_, err = o.Insert(&apply)
 		this.dealError(err)
@@ -379,7 +403,9 @@ func (this *UserController) getUserList() {
 }
 
 func (this *UserController) getUserInfo() {
+
 	tel := this.GetString("tel", "")
+
 	if tel != "" {
 		var user models.TUser
 		o := orm.NewOrm()
@@ -391,6 +417,21 @@ func (this *UserController) getUserInfo() {
 		this.ServeJSON()
 		return
 	}
+
+	userId, err := this.GetInt64("userId", -1)
+	this.dealError(err)
+	if userId != -1 {
+		var user models.TUser
+		o := orm.NewOrm()
+		err := o.QueryTable("t_user").Filter("id", userId).One(&user)
+		this.dealError(err)
+		user.Family = nil
+		user.Pwd = ""
+		this.Data["json"] = map[string]interface{}{"status": 200, "user": user, "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	}
+
 	this.Data["json"] = map[string]interface{}{"status": 400, "msg": "unknow tel !", "time": time.Now().Format("2006-01-02 15:04:05")}
 	this.ServeJSON()
 	return
@@ -409,11 +450,50 @@ func (this *UserController) optionApply() {
 	logs.Info("sql :", sql)
 	o.Raw(sql).QueryRow(&apply)
 	apply.Status = do
-	_, err = o.Update(&apply)
-	this.dealError(err)
-	this.Data["json"] = map[string]interface{}{"status": 200, "apply_status": apply.Status, "time": time.Now().Format("2006-01-02 15:04:05")}
-	this.ServeJSON()
-	return
+
+	if do == models.StatusRefuse || do == models.StatusIgnore {
+		_, err = o.Update(&apply)
+		this.dealError(err)
+		this.Data["json"] = map[string]interface{}{"status": 200, "userId": apply.UserId, "apply_status": apply.Status, "time": time.Now().Format("2006-01-02 15:04:05")}
+		this.ServeJSON()
+		return
+	} else {
+		//查看是否已经是好友
+		var datas []models.TUserList
+		o.QueryTable("t_user_list").Filter("belong", apply.ToId).RelatedSel().All(&datas)
+		flag := false
+		for i := 0; i < len(datas); i++ {
+			if datas[i].Friend.Id == apply.UserId {
+				flag = true
+				break
+			}
+		}
+		if flag {
+			this.Data["json"] = map[string]interface{}{"status": 400, "msg": "该用户已经是您的好友", "apply_status": apply.Status, "time": time.Now().Format("2006-01-02 15:04:05")}
+			this.ServeJSON()
+			return
+		} else {
+			categoryId, err := this.GetInt64("categoryId", -1)
+			this.dealError(err)
+			//添加到好友列表
+			var user models.TUser
+			err = o.QueryTable("t_user").Filter("id", apply.UserId).RelatedSel().One(&user)
+			this.dealError(err)
+			var userList models.TUserList
+			userList.Belong = apply.ToId
+			userList.Friend = &user
+			userList.CategoryId = categoryId
+			userList.Sort = 0
+			userListId, err := o.Insert(&userList)
+			this.dealError(err)
+			userList.Id = userListId
+			_, err = o.Update(&apply)
+			this.dealError(err)
+			this.Data["json"] = map[string]interface{}{"status": 200, "new_friend": userList, "apply_status": apply.Status, "time": time.Now().Format("2006-01-02 15:04:05")}
+			this.ServeJSON()
+			return
+		}
+	}
 
 }
 
